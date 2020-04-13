@@ -1,0 +1,27 @@
+version: "3.7"
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    networks:
+      - ito-network
+
+  ito-upload:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+    ports:
+      - 5001:5001
+    networks:
+      - ito-network
+    depends_on:
+      - mongodb
+
+networks:
+  ito-network:
+
+volumes:
+  db-data:

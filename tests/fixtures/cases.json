@@ -1,0 +1,58 @@
+[
+  {
+    "uuid": { "$uuid": "37ef60df-2183-428d-b651-4c3f3cd94ebb" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": -20.1,
+    "lon": -162.5
+  },
+  {
+    "uuid": { "$uuid": "c8c30adc-d05d-457d-a22a-46b3e6ef4da5" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": 23.2,
+    "lon": -96.6
+  },
+  {
+    "uuid": { "$uuid": "ccccde00-fe20-46e6-ba92-cf684e8a298b" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": 61.0,
+    "lon": -10.6
+  },
+  {
+    "uuid": { "$uuid": "1823bd43-7c9d-43aa-a496-5705d4894139" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": 75.6,
+    "lon": -166.3
+  },
+  {
+    "uuid": { "$uuid": "e8d85b34-51f9-4b8a-a461-4fbb504776cd" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": 2.0,
+    "lon": -9.4
+  },
+  {
+    "uuid": { "$uuid": "b336bcc7-e579-473f-9493-1beab01ade67" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": 4.9,
+    "lon": -71.7
+  },
+  {
+    "uuid": { "$uuid": "adeb4554-3d43-4674-8ee7-4d3e99e08335" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": 75.8,
+    "lon": -77.1
+  },
+  {
+    "uuid": { "$uuid": "38244311-215a-427f-a784-0a4954ee402c" },
+    "trust_level": 1,
+    "upload_timestamp": { "$date": "2020-03-23T03:40:02.385942" },
+    "lat": -46.4,
+    "lon": 174.5
+  }
+]

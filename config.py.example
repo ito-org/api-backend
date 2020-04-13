@@ -1,0 +1,17 @@
+class Config(object):
+    APPLICATION_ROOT = "/"
+    DEBUG = False
+    TESTING = False
+
+
+class ProductionConfig(Config):
+    MONGO_URI = "mongodb://localhost:27017/ito"
+
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    MONGO_URI = "mongodb://localhost:27017/ito"
+
+
+class TestingConfig(Config):
+    TESTING = True
