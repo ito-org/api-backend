@@ -1,8 +1,8 @@
-# ito - Upload API
+# ito - Backend API
 
-Public API for supplying and verifying pseudonyms of users confirmed infected
+API for supplying and verifying TCNs of users confirmed infected
 
-![Tests](https://github.com/ito-org/upload-api/workflows/Build/badge.svg)
+![Tests](https://github.com/ito-org/api-backend/workflows/Build/badge.svg)
 
 ## Requirements
 
