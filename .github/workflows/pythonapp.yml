@@ -57,3 +57,33 @@ jobs:
         env:
           MONGO_URI: mongodb://localhost:27017
           FLASK_ENV: testing
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          # Artifact name
+          name: api-backend
+          # Directory containing files to upload
+          path: .
+
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v1.0.0
+        with:
+          # Artifact name
+          name: api-backend
+          
+      - name: Log in to GitHub Packages
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{ github.repository }} --password-stdin
+
+      - name: Build the Docker image
+        if: success()
+        run: docker build . --file Dockerfile --tag docker.pkg.github.com/ito-org/api-backend/api-backend:latest
+
+      - name: Publish the Docker image on GitHub Packages
+        if: success()
+        run: docker push docker.pkg.github.com/ito-org/api-backend/api-backend:latest
+    
