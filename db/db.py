@@ -1,6 +1,5 @@
 from flask import Flask
 from pymongo import MongoClient, DESCENDING  # type: ignore
-from typing import Optional, Dict, Any, Iterator, List
 from uuid import uuid4, UUID
 from datetime import datetime
 import time
@@ -8,9 +7,7 @@ from random import randrange
 
 
 class DBConnection:
-    db: Any
-
-    def __init__(self, hostUri: Optional[str]):
+    def __init__(self, hostUri):
         if hostUri is None:
             hostUri = "mongodb://localhost:27017"
         client = MongoClient(hostUri)
@@ -20,8 +17,8 @@ class DBConnection:
         # is unique.
         self.db.reportsigs.create_index([("reportsig", DESCENDING)], unique=True)
 
-    def insert_reportsig(self, reportsig: str, timestamp: datetime) -> None:
+    def insert_reportsig(self, reportsig, timestamp) -> None:
         self.db.reportsigs.insert_one({"reportsig": reportsig, "timestamp": timestamp})
 
-    def get_reportsigs(self) -> List[str]:
+    def get_reportsigs(self):
         return list(self.db.reportsigs.find({}, {"_id": False}))

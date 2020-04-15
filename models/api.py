@@ -1,13 +1,9 @@
 import json
 from flask import Response
-from typing import Optional
 
 
 class APIError:
-    code: int
-    message: str
-
-    def __init__(self, code: Optional[int] = None, message: Optional[str] = None):
+    def __init__(self, code, message):
         if code is None:
             self.code = 500
         else:
@@ -18,7 +14,7 @@ class APIError:
         else:
             self.message = message
 
-    def as_response(self) -> Response:
+    def as_response(self):
         return Response(
             json.dumps(self.__dict__), status=self.code, mimetype="application/json"
         )
