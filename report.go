@@ -19,3 +19,13 @@ type Memo struct {
 	Len  uint8
 	Data []uint8
 }
+
+// SignedReport contains a report and the corresponding signature. The client
+// sends this to the server.
+type SignedReport struct {
+	Report *Report
+	// This is a ed25519 signature in byte array form
+	// The ed25519 package returns a byte array as the signature
+	// here: https://golang.org/pkg/crypto/ed25519/#PrivateKey.Sign
+	Sig []byte
+}
