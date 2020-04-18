@@ -1,9 +1,11 @@
 package main
 
+import "crypto/ed25519"
+
 // Report represents a report as described in the TCN protocol:
 // https://github.com/TCNCoalition/TCN#reporting
 type Report struct {
-	RVK      string
+	RVK      ed25519.PublicKey
 	TCKBytes [32]byte
 	J1       uint16
 	J2       uint16
