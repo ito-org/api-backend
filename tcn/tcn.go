@@ -3,6 +3,7 @@ package tcn
 import (
 	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/binary"
 	"errors"
 	"math"
 )
@@ -33,6 +34,31 @@ type Memo struct {
 	Type uint8
 	Len  uint8
 	Data []uint8
+}
+
+// Bytes converts r to a concatenated byte array representions.
+func (r *Report) Bytes() ([]byte, error) {
+	var data []byte
+	data = append(data, r.RVK...)
+	data = append(data, r.TCKBytes[:]...)
+
+	j1Bytes := make([]byte, 2)
+	binary.LittleEndian.PutUint16(j1Bytes, r.J1)
+	j2Bytes := make([]byte, 2)
+	binary.LittleEndian.PutUint16(j2Bytes, r.J2)
+	data = append(data, j1Bytes...)
+	data = append(data, j2Bytes...)
+
+	if r.Memo == nil {
+		return nil, errors.New("Failed to create byte representation of report: memo field is null")
+	}
+
+	// Memo
+	data = append(data, r.Memo.Type)
+	data = append(data, r.Memo.Len)
+	data = append(data, r.Memo.Data...)
+
+	return data, nil
 }
 
 // SignedReport contains a report and the corresponding signature. The client
