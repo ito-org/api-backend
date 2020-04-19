@@ -44,6 +44,10 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 		return
 	}
 
+	if signedReport.Report.Memo == nil || signedReport.Report.Memo.Type != 0x2 {
+		c.String(http.StatusBadRequest, invalidRequestError)
+	}
+
 	ok, err := signedReport.Verify()
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
