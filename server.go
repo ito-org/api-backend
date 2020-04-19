@@ -8,6 +8,12 @@ import (
 	"github.com/ito-org/go-backend/tcn"
 )
 
+const (
+	requestBodyReadError    = "Failed to read request body"
+	invalidRequestError     = "Invalid request"
+	reportVerificationError = "Failed to verify report"
+)
+
 // GetRouter returns the Gin router.
 func GetRouter(port string, dbConnection *DBConnection) *gin.Engine {
 	h := &TCNReportHandler{}
@@ -28,7 +34,7 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 	body := c.Request.Body
 	data, err := ioutil.ReadAll(body)
 	if err != nil {
-		c.String(http.StatusBadRequest, "Failed to read request body")
+		c.String(http.StatusBadRequest, requestBodyReadError)
 		return
 	}
 
@@ -47,7 +53,7 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 	if ok {
 		c.Status(http.StatusOK)
 	} else {
-		c.String(http.StatusBadRequest, "Failed to verify data")
+		c.String(http.StatusBadRequest, reportVerificationError)
 	}
 }
 
