@@ -46,6 +46,8 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 		return
 	}
 
+	// If the memo field doesn't exist or the memo type is not ito's code, we
+	// simply ignore the request.
 	if signedReport.Report.Memo == nil || signedReport.Report.Memo.Type != 0x2 {
 		c.String(http.StatusBadRequest, invalidRequestError)
 		return
