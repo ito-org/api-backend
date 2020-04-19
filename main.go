@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/urfave/cli"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		panic(err.Error())
+	}
+
 	dbName := os.Getenv("POSTGRES_DB")
 	dbUser := os.Getenv("POSTGRES_USER")
 	dbPassword := os.Getenv("POSTGRES_PASSWORD")
