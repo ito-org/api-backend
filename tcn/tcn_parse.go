@@ -3,11 +3,16 @@ package tcn
 import (
 	"crypto/ed25519"
 	"encoding/binary"
+	"errors"
 )
 
 // GetSignedReport interprets data as a signed report and returns it as a
 // parsed structure.
 func GetSignedReport(data []byte) (*SignedReport, error) {
+	if len(data) < SignedReportMinLength+ed25519.SignatureSize {
+		return nil, errors.New("Data too short to be a valid signed report")
+	}
+
 	tckBytes := [32]byte{}
 	copy(tckBytes[:], data[32:64])
 
