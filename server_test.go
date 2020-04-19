@@ -178,3 +178,38 @@ func TestPostTCNInvalidType(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
+
+func TestPostTCNInvalidLength(t *testing.T) {
+	rak, report, err := generateRakAndReport()
+	if err != nil {
+		t.Error(err)
+	}
+
+	report.Memo.Len = 0
+	report.Memo.Data = nil
+
+	rb, err := report.Bytes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	rb = rb[1:]
+
+	sig, err := rak.Sign(nil, rb, crypto.Hash(0))
+	if err != nil {
+		t.Error(err)
+	}
+
+	signedReport := &tcn.SignedReport{
+		Report: report,
+		Sig:    sig,
+	}
+
+	var b []byte
+	b = append(b, rb...)
+	b = append(b, signedReport.Sig...)
+
+	rec := sendPOSTRequest(b)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
