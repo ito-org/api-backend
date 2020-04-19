@@ -7,9 +7,15 @@ import (
 	"math"
 )
 
-// HTCKDomainSep is the domain separator used for the domain-separated hash
-// function.
-const HTCKDomainSep = "H_TCK"
+const (
+	// ITOMemoCode is the code that marks a report as an ito report in the
+	// memo.
+	ITOMemoCode = 0x2
+
+	// HTCKDomainSep is the domain separator used for the domain-separated hash
+	// function.
+	HTCKDomainSep = "H_TCK"
+)
 
 // Report represents a report as described in the TCN protocol:
 // https://github.com/TCNCoalition/TCN#reporting
