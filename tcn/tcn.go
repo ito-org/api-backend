@@ -16,6 +16,9 @@ const (
 	// HTCKDomainSep is the domain separator used for the domain-separated hash
 	// function.
 	HTCKDomainSep = "H_TCK"
+
+	// SignedReportMinLength defines a signed report's minimum length in bytes
+	SignedReportMinLength = 70
 )
 
 // Report represents a report as described in the TCN protocol:
