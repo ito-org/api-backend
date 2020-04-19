@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,14 @@ import (
 	"github.com/ito-org/go-backend/tcn"
 	"github.com/stretchr/testify/assert"
 )
+
+func sendPOSTRequest(data []byte) *httptest.ResponseRecorder {
+	router := GetRouter("8000", nil)
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/tcnreport", bytes.NewReader(data))
+	router.ServeHTTP(rec, req)
+	return rec
+}
 
 func generateMemo(content []byte) (*tcn.Memo, error) {
 	if len(content) > 255 {
@@ -99,11 +108,73 @@ func TestPostTCNReport(t *testing.T) {
 		t.Error(err)
 	}
 
-	router := GetRouter("8000", nil)
-
-	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/tcnreport", bytes.NewReader(b))
-	router.ServeHTTP(rec, req)
+	rec := sendPOSTRequest(b)
 
 	assert.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestPostTCNReportInvalidSig(t *testing.T) {
+	// Store just the report here since we're going to sign it with a different
+	// key
+	_, report, err := generateRakAndReport()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Generate second private key to sign with so we can force an error to
+	// happen
+	rak2, _, err := generateRakAndReport()
+	if err != nil {
+		t.Error(err)
+	}
+
+	rb, err := report.Bytes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	fakeSignedReport, err := generateSignedReport(rak2, report) // Note: wrong key used here
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Manually concatenate the byte array that's sent to the server
+	b := []byte{}
+	b = append(b, rb...)
+	b = append(b, fakeSignedReport.Sig...)
+
+	rec := sendPOSTRequest(b)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	defer rec.Result().Body.Close()
+	respData, err := ioutil.ReadAll(rec.Result().Body)
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Equal(t, reportVerificationError, string(respData))
+}
+
+func TestPostTCNInvalidType(t *testing.T) {
+	rak, report, err := generateRakAndReport()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Not ito memo type
+	report.Memo.Type = 0x1
+
+	signedReport, err := generateSignedReport(rak, report)
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, err := signedReport.Bytes()
+	if err != nil {
+		t.Error(err)
+	}
+
+	rec := sendPOSTRequest(b)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
