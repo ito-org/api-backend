@@ -9,18 +9,52 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/ito-org/go-backend/tcn"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
 
-func sendPOSTRequest(data []byte) *httptest.ResponseRecorder {
-	router := GetRouter("8000", nil)
+var handler *TCNReportHandler
+
+// Init function before every test
+func TestMain(m *testing.M) {
+	// Initialize the database connection and the handler structure so we can
+	// call the handler functions directly instead of making actual HTTP
+	// requests. This allows us to create and the database connection which
+	// would otherwise not happen.
+
+	if err := godotenv.Load(); err != nil {
+		panic(err.Error())
+	}
+
+	dbName := os.Getenv("POSTGRES_DB")
+	dbUser := os.Getenv("POSTGRES_USER")
+	dbPassword := os.Getenv("POSTGRES_PASSWORD")
+
+	if dbName == "" || dbUser == "" || dbPassword == "" {
+		panic("Error loading environment variables")
+	}
+
+	dbConn, err := NewDBConnection("localhost", dbUser, dbPassword, dbName)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	handler = &TCNReportHandler{
+		dbConn: dbConn,
+	}
+	code := m.Run()
+	os.Exit(code)
+}
+
+func getPostRequest(data []byte) (*httptest.ResponseRecorder, *http.Request) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/tcnreport", bytes.NewReader(data))
-	router.ServeHTTP(rec, req)
-	return rec
+	return rec, req
 }
 
 func generateMemo(content []byte) (*tcn.Memo, error) {
@@ -108,7 +142,10 @@ func TestPostTCNReport(t *testing.T) {
 		t.Error(err)
 	}
 
-	rec := sendPOSTRequest(b)
+	rec, req := getPostRequest(b)
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	handler.postTCNReport(ctx)
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 }
@@ -143,7 +180,10 @@ func TestPostTCNReportInvalidSig(t *testing.T) {
 	b = append(b, rb...)
 	b = append(b, fakeSignedReport.Sig...)
 
-	rec := sendPOSTRequest(b)
+	rec, req := getPostRequest(b)
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	handler.postTCNReport(ctx)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 
@@ -174,7 +214,10 @@ func TestPostTCNInvalidType(t *testing.T) {
 		t.Error(err)
 	}
 
-	rec := sendPOSTRequest(b)
+	rec, req := getPostRequest(b)
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	handler.postTCNReport(ctx)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
@@ -209,7 +252,10 @@ func TestPostTCNInvalidLength(t *testing.T) {
 	b = append(b, rb...)
 	b = append(b, signedReport.Sig...)
 
-	rec := sendPOSTRequest(b)
+	rec, req := getPostRequest(b)
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	handler.postTCNReport(ctx)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
 }
