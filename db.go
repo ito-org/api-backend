@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/ito-org/go-backend/tcn"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -30,12 +31,12 @@ type DBConnection struct {
 	*sqlx.DB
 }
 
-func (db *DBConnection) insertReport(report *Report) error {
+func (db *DBConnection) insertReport(report *tcn.Report) error {
 	// TODO
 	return nil
 }
 
-func (db *DBConnection) getReports() ([]*Report, error) {
+func (db *DBConnection) getReports() ([]*tcn.Report, error) {
 	// TODO
 	return nil, nil
 }
