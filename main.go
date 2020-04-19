@@ -8,12 +8,17 @@ import (
 )
 
 func main() {
+	dbName := os.Getenv("POSTGRES_DB")
+	dbUser := os.Getenv("POSTGRES_USER")
+	dbPassword := os.Getenv("POSTGRES_PASSWORD")
+
+	if dbName == "" || dbUser == "" || dbPassword == "" {
+		panic("Error loading environment variables")
+	}
+
 	var (
-		port       string
-		dbHost     string
-		dbUser     string
-		dbPassword string
-		dbName     string
+		port   string
+		dbHost string
 	)
 
 	app := &cli.App{
@@ -30,34 +35,13 @@ func main() {
 				Usage:       "The Postgres host to be used",
 				Destination: &dbHost,
 			},
-			&cli.StringFlag{
-				Name:        "dbuser",
-				Value:       "",
-				Usage:       "The Postgres user to be used",
-				Destination: &dbUser,
-			},
-			&cli.StringFlag{
-				Name:        "dbpw",
-				Value:       "",
-				Usage:       "The password to be used when connecting to Postgres",
-				Destination: &dbPassword,
-			},
-			&cli.StringFlag{
-				Name:        "dbname",
-				Value:       "",
-				Usage:       "The name of the Postgres database to be used",
-				Destination: &dbName,
-			},
 		},
 		Action: func(ctx *cli.Context) error {
 			dbConnection, err := NewDBConnection(dbHost, dbUser, dbPassword, dbName)
 			if err != nil {
 				return err
 			}
-			if err := StartServer(port, dbConnection); err != nil {
-				return err
-			}
-			return nil
+			return GetRouter(port, dbConnection).Run(fmt.Sprintf(":%s", port))
 		},
 	}
 
