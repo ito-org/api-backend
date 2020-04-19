@@ -32,8 +32,46 @@ type DBConnection struct {
 	*sqlx.DB
 }
 
+func (db *DBConnection) insertMemo(memo *tcn.Memo) (uint64, error) {
+	var newID uint64
+	if err := db.QueryRowx(
+		`
+		INSERT INTO
+		Memo(mtype, mdata)
+		VALUES($1, $2)
+		RETURNING id;
+		`,
+		memo.Type,
+		memo.Data[:],
+	).Scan(&newID); err != nil {
+		fmt.Sprintf("Failed to insert memo into database: %s\n", err.Error())
+		return 0, err
+	}
+	return newID, nil
+}
+
 func (db *DBConnection) insertReport(report *tcn.Report) error {
-	// TODO
+	memoID, err := db.insertMemo(report.Memo)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(
+		`
+	INSERT INTO
+	Report(rvk, tck_bytes, j_1, j_2, memo_id)
+	VALUES($1, $2, $3, $4, $5);
+	`,
+		report.RVK,
+		report.TCKBytes[:],
+		report.J1,
+		report.J2,
+		memoID,
+	)
+	if err != nil {
+		fmt.Printf("Failed to insert report into database: %s\n", err.Error())
+		return err
+	}
 	return nil
 }
 
