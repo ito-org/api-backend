@@ -16,7 +16,9 @@ const (
 
 // GetRouter returns the Gin router.
 func GetRouter(port string, dbConnection *DBConnection) *gin.Engine {
-	h := &TCNReportHandler{}
+	h := &TCNReportHandler{
+		dbConn: dbConnection,
+	}
 
 	r := gin.Default()
 	r.POST("/tcnreport", h.postTCNReport)
@@ -27,7 +29,7 @@ func GetRouter(port string, dbConnection *DBConnection) *gin.Engine {
 // TCNReportHandler implements the handler functions for the API endpoints.
 // It also holds the database connection that's used by the handler functions.
 type TCNReportHandler struct {
-	// todo: db connection
+	dbConn *DBConnection
 }
 
 func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
