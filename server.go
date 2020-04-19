@@ -1,20 +1,21 @@
 package main
 
 import (
-	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ito-org/go-backend/tcn"
 )
 
-// StartServer runs the HTTP server
-func StartServer(port string, dbConnection *DBConnection) error {
+// GetRouter returns the Gin router.
+func GetRouter(port string, dbConnection *DBConnection) *gin.Engine {
 	h := &TCNReportHandler{}
 
 	r := gin.Default()
 	r.POST("/tcnreport", h.postTCNReport)
 	r.GET("/tcnreport", h.getTCNReport)
-	return r.Run(fmt.Sprintf(":%s", port))
+	return r
 }
 
 // TCNReportHandler implements the handler functions for the API endpoints.
@@ -24,8 +25,30 @@ type TCNReportHandler struct {
 }
 
 func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
-	// TODO
-	c.String(http.StatusOK, "POST that TCN")
+	body := c.Request.Body
+	data, err := ioutil.ReadAll(body)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed to read request body")
+		return
+	}
+
+	signedReport, err := tcn.GetSignedReport(data)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ok, err := signedReport.Verify()
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if ok {
+		c.Status(http.StatusOK)
+	} else {
+		c.String(http.StatusBadRequest, "Failed to verify data")
+	}
 }
 
 func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
