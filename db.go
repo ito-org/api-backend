@@ -10,7 +10,7 @@ import (
 // NewDBConnection creates and tests a new db connection and returns it.
 func NewDBConnection(dbHost, dbUser, dbPassword, dbName string) (*DBConnection, error) {
 	connStr := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s sslmode=disabled",
+		"host=%s user=%s password=%s dbname=%s sslmode=disable",
 		dbHost,
 		dbUser,
 		dbPassword,
