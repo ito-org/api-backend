@@ -71,6 +71,28 @@ type SignedReport struct {
 	Sig []byte
 }
 
+// Bytes converts sr to a concatenated byte array representation.
+func (sr *SignedReport) Bytes() ([]byte, error) {
+	var data []byte
+	b, err := sr.Report.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	data = append(data, b...)
+	data = append(data, sr.Sig...)
+	return data, nil
+}
+
+// Verify uses ed25519's Verify function to verify the signature over the
+// report.
+func (sr *SignedReport) Verify() (bool, error) {
+	reportBytes, err := sr.Report.Bytes()
+	if err != nil {
+		return false, err
+	}
+	return ed25519.Verify(sr.Report.RVK, reportBytes, sr.Sig), nil
+}
+
 // TemporaryContactNumber is a pseudorandom 128-bit value broadcast to nearby
 // devices over Bluetooth
 type TemporaryContactNumber [16]uint8
