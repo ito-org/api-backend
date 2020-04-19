@@ -4,7 +4,7 @@ CREATE DOMAIN uint8 AS smallint
 CREATE TABLE IF NOT EXISTS Memo (
     id bigserial primary key,
     mtype uint8 not null,
-    mlength uint8
+    mdata bytea
 );
 
 CREATE TABLE IF NOT EXISTS Report (
