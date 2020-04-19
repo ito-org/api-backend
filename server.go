@@ -57,11 +57,17 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 		return
 	}
 
-	if ok {
-		c.Status(http.StatusOK)
-	} else {
+	if !ok {
 		c.String(http.StatusBadRequest, reportVerificationError)
+		return
 	}
+
+	if err := h.dbConn.insertReport(signedReport.Report); err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
