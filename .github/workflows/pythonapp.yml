@@ -46,9 +46,6 @@ jobs:
       - name: Code Quality
         run: poetry run black . --check
 
-      - name: Check types statically
-        run: poetry run mypy . --strict
-
       - name: Install mongodb
         run: sudo docker run --name mongo -d -p 27017:27017 mongo
       
