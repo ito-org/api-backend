@@ -5,6 +5,7 @@ import (
 
 	"github.com/ito-org/go-backend/tcn"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 // NewDBConnection creates and tests a new db connection and returns it.
