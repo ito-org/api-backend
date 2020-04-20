@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Build and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -38,3 +38,13 @@ jobs:
 
       - name: Run Tests
         run: POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres go test -v .
+
+  linting:
+    name: Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Linting
+        run: docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.24.0 golangci-lint run -v
