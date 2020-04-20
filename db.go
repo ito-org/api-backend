@@ -77,6 +77,41 @@ func (db *DBConnection) insertReport(report *tcn.Report) error {
 }
 
 func (db *DBConnection) getReports() ([]*tcn.Report, error) {
-	// TODO
-	return nil, nil
+	reports := []*tcn.Report{}
+
+	rows, err := db.Queryx(
+		`SELECT r.rvk, r.tck_bytes, r.j_1, r.j_2, m.mtype, m.mlen, m.mdata
+		FROM Report r
+		JOIN Memo m ON r.memo_id = m.id;
+		`,
+	)
+	if err != nil {
+		fmt.Printf("Failed to get reports from database: %s\n", err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		report := &tcn.Report{
+			TCKBytes: [32]uint8{},
+			Memo:     &tcn.Memo{},
+		}
+		tckBytesDest := []byte{}
+		if err := rows.Scan(
+			&report.RVK,
+			&tckBytesDest,
+			&report.J1,
+			&report.J2,
+			&report.Memo.Type,
+			&report.Memo.Len,
+			&report.Memo.Data,
+		); err != nil {
+			fmt.Printf("Failed to scan report: %s\n", err.Error())
+			return nil, err
+		}
+
+		copy(report.TCKBytes[:], tckBytesDest[:32])
+		reports = append(reports, report)
+	}
+
+	return reports, nil
 }
