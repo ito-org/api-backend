@@ -1,0 +1,40 @@
+name: Continuous Integration
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.13
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Spin up a detatched Postgress image
+        run: docker run --detach --name postgres -p 5432:5432 -v $(pwd)/db:/data -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres postgres
+
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+          if [ -f Gopkg.toml ]; then
+              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+              dep ensure
+          fi
+
+      - name: Build
+        run: go build -v .
+
+      - name: Initialize database
+        run: docker exec postgres psql -f /data/db.sql -U postgres
+
+      - name: Run Tests
+        run: POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres go test -v .
