@@ -3,13 +3,11 @@ package main
 import (
 	"bytes"
 	"crypto"
-	"crypto/ed25519"
-	"crypto/sha256"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -40,95 +38,35 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func getGetRequest() (*httptest.ResponseRecorder, *http.Request) {
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/tcnreport", nil)
+	return rec, req
+}
+
 func getPostRequest(data []byte) (*httptest.ResponseRecorder, *http.Request) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/tcnreport", bytes.NewReader(data))
 	return rec, req
 }
 
-func generateMemo(content []byte) (*tcn.Memo, error) {
-	if len(content) > 255 {
-		return nil, errors.New("Data field contains too many bytes")
-	}
-
-	return &tcn.Memo{
-		Type: tcn.ITOMemoCode,
-		Len:  uint8(len(content)),
-		Data: content,
-	}, nil
-}
-
-func generateRakAndReport() (*ed25519.PrivateKey, *tcn.Report, error) {
-	rvk, rak, err := ed25519.GenerateKey(nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	tck0Hash := sha256.New()
-	tck0Hash.Write([]byte(tcn.HTCKDomainSep))
-	tck0Hash.Write(rak)
-
-	tck0Bytes := [32]byte{}
-	copy(tck0Bytes[:32], tck0Hash.Sum(nil))
-
-	tck0 := &tcn.TemporaryContactKey{
-		Index:    0,
-		RVK:      rvk,
-		TCKBytes: tck0Bytes,
-	}
-
-	tck1, err := tck0.Ratchet()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	memo, err := generateMemo([]byte("symptom data"))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	report := &tcn.Report{
-		RVK:      rvk,
-		TCKBytes: tck1.TCKBytes,
-		J1:       0,
-		J2:       1,
-		Memo:     memo,
-	}
-
-	return &rak, report, nil
-}
-
-func generateSignedReport(rak *ed25519.PrivateKey, report *tcn.Report) (*tcn.SignedReport, error) {
-	b, err := report.Bytes()
-	if err != nil {
-		return nil, err
-	}
-
-	sig, err := rak.Sign(nil, b, crypto.Hash(0))
-	if err != nil {
-		return nil, err
-	}
-
-	return &tcn.SignedReport{
-		Report: report,
-		Sig:    sig,
-	}, nil
-}
-
 func TestPostTCNReport(t *testing.T) {
-	rak, report, err := generateRakAndReport()
+	_, rak, report, err := tcn.GenerateReport(0, 1, []byte("symptom data"))
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	signedReport, err := generateSignedReport(rak, report)
+	signedReport, err := tcn.GenerateSignedReport(rak, report)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	b, err := signedReport.Bytes()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	rec, req := getPostRequest(b)
@@ -142,26 +80,29 @@ func TestPostTCNReport(t *testing.T) {
 func TestPostTCNReportInvalidSig(t *testing.T) {
 	// Store just the report here since we're going to sign it with a different
 	// key
-	_, report, err := generateRakAndReport()
+	_, _, report, err := tcn.GenerateReport(0, 1, nil)
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Generate second private key to sign with so we can force an error to
 	// happen
-	rak2, _, err := generateRakAndReport()
+	_, rak2, _, err := tcn.GenerateReport(0, 1, nil)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	rb, err := report.Bytes()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	fakeSignedReport, err := generateSignedReport(rak2, report) // Note: wrong key used here
+	fakeSignedReport, err := tcn.GenerateSignedReport(rak2, report) // Note: wrong key used here
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	// Manually concatenate the byte array that's sent to the server
@@ -180,27 +121,31 @@ func TestPostTCNReportInvalidSig(t *testing.T) {
 	respData, err := ioutil.ReadAll(rec.Result().Body)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	assert.Equal(t, reportVerificationError, string(respData))
 }
 
 func TestPostTCNInvalidType(t *testing.T) {
-	rak, report, err := generateRakAndReport()
+	_, rak, report, err := tcn.GenerateReport(0, 1, nil)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	// Not ito memo type
 	report.Memo.Type = 0x1
 
-	signedReport, err := generateSignedReport(rak, report)
+	signedReport, err := tcn.GenerateSignedReport(rak, report)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	b, err := signedReport.Bytes()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	rec, req := getPostRequest(b)
@@ -212,9 +157,10 @@ func TestPostTCNInvalidType(t *testing.T) {
 }
 
 func TestPostTCNInvalidLength(t *testing.T) {
-	rak, report, err := generateRakAndReport()
+	_, rak, report, err := tcn.GenerateReport(0, 1, nil)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	report.Memo.Len = 0
@@ -223,13 +169,15 @@ func TestPostTCNInvalidLength(t *testing.T) {
 	rb, err := report.Bytes()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	rb = rb[1:]
+	rb = rb[1:] // This is where the report gets its invalid length
 
 	sig, err := rak.Sign(nil, rb, crypto.Hash(0))
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	signedReport := &tcn.SignedReport{
@@ -247,4 +195,65 @@ func TestPostTCNInvalidLength(t *testing.T) {
 	handler.postTCNReport(ctx)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestGetTCNReports(t *testing.T) {
+	reports := [5]*tcn.Report{}
+	for i := 0; i < 5; i++ {
+		_, rak, report, _ := tcn.GenerateReport(0, 1, []byte("symptom data"))
+		signedReport, err := tcn.GenerateSignedReport(rak, report)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+
+		signedReportBytes, err := signedReport.Bytes()
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+
+		// POST reports
+		rec, req := getPostRequest(signedReportBytes)
+		ctx, _ := gin.CreateTestContext(rec)
+		ctx.Request = req
+		handler.postTCNReport(ctx)
+
+		reports[i] = report
+	}
+
+	// GET reports
+	rec, req := getGetRequest()
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	handler.getTCNReport(ctx)
+	defer rec.Result().Body.Close()
+
+	body, err := ioutil.ReadAll(rec.Result().Body)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	if len(body) == 0 {
+		t.Error("Body is empty")
+		return
+	}
+
+	// Retrieve the reports from the handler function's response
+	retReports := tcn.GetReports(body)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	found := 0
+	for _, r := range reports {
+		for _, rr := range retReports {
+			if reflect.DeepEqual(r, rr) {
+				found++
+			}
+		}
+	}
+
+	assert.Equal(t, len(reports), found)
 }
