@@ -37,14 +37,15 @@ func (db *DBConnection) insertMemo(memo *tcn.Memo) (uint64, error) {
 	if err := db.QueryRowx(
 		`
 		INSERT INTO
-		Memo(mtype, mdata)
-		VALUES($1, $2)
+		Memo(mtype, mlen, mdata)
+		VALUES($1, $2, $3)
 		RETURNING id;
 		`,
 		memo.Type,
+		memo.Len,
 		memo.Data[:],
 	).Scan(&newID); err != nil {
-		fmt.Sprintf("Failed to insert memo into database: %s\n", err.Error())
+		fmt.Printf("Failed to insert memo into database: %s\n", err.Error())
 		return 0, err
 	}
 	return newID, nil
