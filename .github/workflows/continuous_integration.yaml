@@ -39,6 +39,18 @@ jobs:
       - name: Run Tests
         run: POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres go test -v .
 
+  security-scanning:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
   linting:
     name: Linting
     runs-on: ubuntu-latest
