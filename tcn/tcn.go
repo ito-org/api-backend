@@ -1,6 +1,7 @@
 package tcn
 
 import (
+	"crypto"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/binary"
@@ -64,6 +65,69 @@ func (r *Report) Bytes() ([]byte, error) {
 	return data, nil
 }
 
+// GenerateMemo returns a memo instance with the given content.
+func GenerateMemo(content []byte) (*Memo, error) {
+	if len(content) > 255 {
+		return nil, errors.New("Data field contains too many bytes")
+	}
+
+	var c []byte
+	// If content is nil, we don't want the data field in the memo to be nil
+	// but empty instead.
+	if content != nil {
+		c = content
+	} else {
+		c = []byte{}
+	}
+
+	return &Memo{
+		Type: ITOMemoCode,
+		Len:  uint8(len(content)),
+		Data: c,
+	}, nil
+}
+
+// GenerateReport creates a public key, private key, and report according to TCN.
+func GenerateReport(j1, j2 uint16, memoData []byte) (*ed25519.PublicKey, *ed25519.PrivateKey, *Report, error) {
+	rvk, rak, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	tck0Hash := sha256.New()
+	tck0Hash.Write([]byte(HTCKDomainSep))
+	tck0Hash.Write(rak)
+
+	tck0Bytes := [32]byte{}
+	copy(tck0Bytes[:32], tck0Hash.Sum(nil))
+
+	tck0 := &TemporaryContactKey{
+		Index:    0,
+		RVK:      rvk,
+		TCKBytes: tck0Bytes,
+	}
+
+	tck1, err := tck0.Ratchet()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	memo, err := GenerateMemo(memoData)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	report := &Report{
+		RVK:      rvk,
+		TCKBytes: tck1.TCKBytes,
+		J1:       j1,
+		J2:       j2,
+		Memo:     memo,
+	}
+
+	return &rvk, &rak, report, nil
+}
+
 // SignedReport contains a report and the corresponding signature. The client
 // sends this to the server.
 type SignedReport struct {
@@ -84,6 +148,24 @@ func (sr *SignedReport) Bytes() ([]byte, error) {
 	data = append(data, b...)
 	data = append(data, sr.Sig...)
 	return data, nil
+}
+
+// GenerateSignedReport signs a report with rak and returns the signed report.
+func GenerateSignedReport(rak *ed25519.PrivateKey, report *Report) (*SignedReport, error) {
+	b, err := report.Bytes()
+	if err != nil {
+		return nil, err
+	}
+
+	sig, err := rak.Sign(nil, b, crypto.Hash(0))
+	if err != nil {
+		return nil, err
+	}
+
+	return &SignedReport{
+		Report: report,
+		Sig:    sig,
+	}, nil
 }
 
 // Verify uses ed25519's Verify function to verify the signature over the
