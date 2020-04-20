@@ -73,6 +73,21 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 }
 
 func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
-	// TODO
-	c.String(http.StatusOK, "Here's your TCN")
+	reports, err := h.dbConn.getReports()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	data := []byte{}
+	for _, r := range reports {
+		b, err := r.Bytes()
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		data = append(data, b...)
+	}
+
+	c.Data(http.StatusOK, "application/octet-stream", data)
 }
