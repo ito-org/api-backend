@@ -24,19 +24,19 @@ const (
 // Report represents a report as described in the TCN protocol:
 // https://github.com/TCNCoalition/TCN#reporting
 type Report struct {
-	RVK      ed25519.PublicKey
-	TCKBytes [32]byte
-	J1       uint16
-	J2       uint16
-	Memo     *Memo
+	RVK      ed25519.PublicKey `db:"rvk"`
+	TCKBytes [32]byte          `db:"tck_bytes"`
+	J1       uint16            `db:"j_1"`
+	J2       uint16            `db:"j_2"`
+	*Memo
 }
 
 // Memo represents a memo data set as described in the TCN protocol:
 // https://github.com/TCNCoalition/TCN#reporting
 type Memo struct {
-	Type uint8
-	Len  uint8
-	Data []uint8
+	Type uint8   `db:"mtype"`
+	Len  uint8   `db:"mlen"`
+	Data []uint8 `db:"mdata"`
 }
 
 // Bytes converts r to a concatenated byte array represention.
