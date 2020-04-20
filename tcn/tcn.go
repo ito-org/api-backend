@@ -39,7 +39,7 @@ type Memo struct {
 	Data []uint8
 }
 
-// Bytes converts r to a concatenated byte array representions.
+// Bytes converts r to a concatenated byte array represention.
 func (r *Report) Bytes() ([]byte, error) {
 	var data []byte
 	data = append(data, r.RVK...)
