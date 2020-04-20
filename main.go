@@ -8,22 +8,33 @@ import (
 	"github.com/urfave/cli"
 )
 
+func readPostgresSettings(useEnvFile bool) (dbName, dbUser, dbPassword string) {
+	if useEnvFile {
+		godotenv.Load()
+	}
+
+	dbName = os.Getenv("POSTGRES_DB")
+	dbUser = os.Getenv("POSTGRES_USER")
+	dbPassword = os.Getenv("POSTGRES_PASSWORD")
+
+	if dbName == "" {
+		dbName = "postgres"
+	}
+	if dbUser == "" {
+		dbUser = "postgres"
+	}
+	if dbPassword == "" {
+		dbPassword = "ito"
+	}
+
+	return
+}
+
 func main() {
-	if err := godotenv.Load(); err != nil {
-		panic(err.Error())
-	}
-
-	dbName := os.Getenv("POSTGRES_DB")
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPassword := os.Getenv("POSTGRES_PASSWORD")
-
-	if dbName == "" || dbUser == "" || dbPassword == "" {
-		panic("Error loading environment variables")
-	}
-
 	var (
-		port   string
-		dbHost string
+		port       string
+		dbHost     string
+		useEnvFile bool
 	)
 
 	app := &cli.App{
@@ -40,8 +51,14 @@ func main() {
 				Usage:       "The Postgres host to be used",
 				Destination: &dbHost,
 			},
+			&cli.BoolFlag{
+				Name:        "env",
+				Usage:       "Set to true to read from environment variable file",
+				Destination: &useEnvFile,
+			},
 		},
 		Action: func(ctx *cli.Context) error {
+			dbName, dbUser, dbPassword := readPostgresSettings(useEnvFile)
 			dbConnection, err := NewDBConnection(dbHost, dbUser, dbPassword, dbName)
 			if err != nil {
 				return err

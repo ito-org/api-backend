@@ -14,7 +14,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ito-org/go-backend/tcn"
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,17 +26,7 @@ func TestMain(m *testing.M) {
 	// requests. This allows us to create and the database connection which
 	// would otherwise not happen.
 
-	if err := godotenv.Load(); err != nil {
-		panic(err.Error())
-	}
-
-	dbName := os.Getenv("POSTGRES_DB")
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPassword := os.Getenv("POSTGRES_PASSWORD")
-
-	if dbName == "" || dbUser == "" || dbPassword == "" {
-		panic("Error loading environment variables")
-	}
+	dbName, dbUser, dbPassword := readPostgresSettings(true)
 
 	dbConn, err := NewDBConnection("localhost", dbUser, dbPassword, dbName)
 	if err != nil {
