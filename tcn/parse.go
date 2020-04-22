@@ -13,26 +13,52 @@ func GetSignedReport(data []byte) (*SignedReport, error) {
 		return nil, errors.New("Data too short to be a valid signed report")
 	}
 
-	report := GetReport(data)
-	memoDataLen := uint8(data[69])
-	sig := data[70+memoDataLen:]
+	signedReport, _ := getSignedReport(data)
+	return signedReport, nil
+}
 
+// getSignedReport returns the signed report contained in data and returns it
+// in combination with its length (end position), which allows for parsing of
+// multiple signed reports.
+func getSignedReport(data []byte) (*SignedReport, uint16) {
+	report, reportEndPos := getReport(data)
+	endPos := reportEndPos + ed25519.SignatureSize
+	sig := data[reportEndPos:endPos]
 	return &SignedReport{
 		Report: report,
 		Sig:    sig,
-	}, nil
+	}, endPos
+}
+
+// GetSignedReports gets all signed reports contained in a byte array and
+// returns them.
+func GetSignedReports(data []byte) []*SignedReport {
+	signedReports := []*SignedReport{}
+	var startPos uint16
+	for true {
+		signedReport, endPos := getSignedReport(data[startPos:])
+		startPos += endPos
+		signedReports = append(signedReports, signedReport)
+		if int(startPos) >= len(data) {
+			// TODO: Fail if the startPos is greater than the length of data
+			// because this can only happen if something was wrong with the
+			// data (e.g. memo length field incorrect)
+			break
+		}
+	}
+	return signedReports
 }
 
 // GetReport inteprets data as a report and returns it as a parsed structure.
 func GetReport(data []byte) *Report {
-	_, report := getReport(data)
+	report, _ := getReport(data)
 	return report
 }
 
 // getReport is the internal function for getting reports from byte arrays.
 // It returns the report contained in the data field and also returns the
 // length / end position of the array.
-func getReport(data []byte) (endPos uint16, report *Report) {
+func getReport(data []byte) (report *Report, endPos uint16) {
 	tckBytes := [32]byte{}
 	copy(tckBytes[:], data[32:64])
 
@@ -56,7 +82,7 @@ func getReport(data []byte) (endPos uint16, report *Report) {
 
 	endPos = 70 + uint16(memoDataLen)
 
-	return endPos, report
+	return report, endPos
 }
 
 // GetReports gets all reports contained in a byte array and returns them.
@@ -64,7 +90,7 @@ func GetReports(data []byte) []*Report {
 	reports := []*Report{}
 	var startPos uint16
 	for true {
-		endPos, report := getReport(data[startPos:])
+		report, endPos := getReport(data[startPos:])
 		startPos += endPos
 		reports = append(reports, report)
 		if int(startPos) >= len(data) {
