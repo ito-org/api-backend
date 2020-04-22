@@ -73,15 +73,15 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 }
 
 func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
-	reports, err := h.dbConn.getReports()
+	signedReports, err := h.dbConn.getSignedReports()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	data := []byte{}
-	for _, r := range reports {
-		b, err := r.Bytes()
+	for _, sr := range signedReports {
+		b, err := sr.Bytes()
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
