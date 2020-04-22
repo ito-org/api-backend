@@ -198,7 +198,7 @@ func TestPostTCNInvalidLength(t *testing.T) {
 }
 
 func TestGetTCNReports(t *testing.T) {
-	reports := [5]*tcn.Report{}
+	signedReports := [5]*tcn.SignedReport{}
 	for i := 0; i < 5; i++ {
 		_, rak, report, _ := tcn.GenerateReport(0, 1, []byte("symptom data"))
 		signedReport, err := tcn.GenerateSignedReport(rak, report)
@@ -219,7 +219,7 @@ func TestGetTCNReports(t *testing.T) {
 		ctx.Request = req
 		handler.postTCNReport(ctx)
 
-		reports[i] = report
+		signedReports[i] = signedReport
 	}
 
 	// GET reports
@@ -239,21 +239,21 @@ func TestGetTCNReports(t *testing.T) {
 		return
 	}
 
-	// Retrieve the reports from the handler function's response
-	retReports := tcn.GetReports(body)
+	// Retrieve the signed reports from the handler function's response
+	retSignedReports := tcn.GetSignedReports(body)
 	if err != nil {
 		t.Error(err.Error())
 		return
 	}
 
 	found := 0
-	for _, r := range reports {
-		for _, rr := range retReports {
+	for _, r := range signedReports {
+		for _, rr := range retSignedReports {
 			if reflect.DeepEqual(r, rr) {
 				found++
 			}
 		}
 	}
 
-	assert.Equal(t, len(reports), found)
+	assert.Equal(t, len(signedReports), found)
 }
