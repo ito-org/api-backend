@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"math"
 )
 
@@ -27,9 +28,18 @@ type TemporaryContactKey struct {
 // contact number.
 func (tck *TemporaryContactKey) Ratchet() (*TemporaryContactKey, error) {
 	nextHash := sha256.New()
-	nextHash.Write([]byte(HTCKDomainSep))
-	nextHash.Write(tck.RVK)
-	nextHash.Write(tck.TCKBytes[:])
+	if _, err := nextHash.Write([]byte(HTCKDomainSep)); err != nil {
+		fmt.Printf("Failed to write tck domain separator: %s\n", err.Error())
+		return nil, err
+	}
+	if _, err := nextHash.Write(tck.RVK); err != nil {
+		fmt.Printf("Failed to write rvk: %s\n", err.Error())
+		return nil, err
+	}
+	if _, err := nextHash.Write(tck.TCKBytes[:]); err != nil {
+		fmt.Printf("Failed to write tck bytes: %s\n", err.Error())
+		return nil, err
+	}
 
 	if tck.Index == math.MaxUint16 {
 		return nil, errors.New("rak should be rotated")

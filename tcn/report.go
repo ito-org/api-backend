@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 )
 
 const (
@@ -86,8 +87,14 @@ func GenerateReport(j1, j2 uint16, memoData []byte) (*ed25519.PublicKey, *ed2551
 	}
 
 	tck0Hash := sha256.New()
-	tck0Hash.Write([]byte(HTCKDomainSep))
-	tck0Hash.Write(rak)
+	if _, err := tck0Hash.Write([]byte(HTCKDomainSep)); err != nil {
+		fmt.Printf("Failed to write tck domain separator: %s\n", err.Error())
+		return nil, nil, nil, err
+	}
+	if _, err := tck0Hash.Write(rak); err != nil {
+		fmt.Printf("Failed to write rak: %s\n", err.Error())
+		return nil, nil, nil, err
+	}
 
 	tck0Bytes := [32]byte{}
 	copy(tck0Bytes[:32], tck0Hash.Sum(nil))
