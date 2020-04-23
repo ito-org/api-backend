@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 	// requests. This allows us to create and the database connection which
 	// would otherwise not happen.
 
-	dbName, dbUser, dbPassword := readPostgresSettings(true)
+	dbName, dbUser, dbPassword := readPostgresSettings()
 
 	dbConn, err := NewDBConnection("localhost", dbUser, dbPassword, dbName)
 	if err != nil {
