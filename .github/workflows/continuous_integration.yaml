@@ -23,21 +23,16 @@ jobs:
         run: docker run --detach --name postgres -p 5432:5432 -v $(pwd)/db:/data -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres postgres
 
       - name: Get dependencies
-        run: |
-          go get -v -t -d ./...
-          if [ -f Gopkg.toml ]; then
-              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-              dep ensure
-          fi
+        run: go get ./...
 
       - name: Build
-        run: go build -v .
+        run: go build .
 
       - name: Initialize database
         run: docker exec postgres psql -f /data/db.sql -U postgres
 
       - name: Run Tests
-        run: POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres go test -v .
+        run: POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres go test -v ./...
 
   security-scanning:
     name: Security Scanning
