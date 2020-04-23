@@ -16,7 +16,9 @@ const (
 
 // GetRouter returns the Gin router.
 func GetRouter(port string, dbConnection *DBConnection) *gin.Engine {
-	h := &TCNReportHandler{}
+	h := &TCNReportHandler{
+		dbConn: dbConnection,
+	}
 
 	r := gin.Default()
 	r.POST("/tcnreport", h.postTCNReport)
@@ -27,7 +29,7 @@ func GetRouter(port string, dbConnection *DBConnection) *gin.Engine {
 // TCNReportHandler implements the handler functions for the API endpoints.
 // It also holds the database connection that's used by the handler functions.
 type TCNReportHandler struct {
-	// todo: db connection
+	dbConn *DBConnection
 }
 
 func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
@@ -44,6 +46,8 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 		return
 	}
 
+	// If the memo field doesn't exist or the memo type is not ito's code, we
+	// simply ignore the request.
 	if signedReport.Report.Memo == nil || signedReport.Report.Memo.Type != 0x2 {
 		c.String(http.StatusBadRequest, invalidRequestError)
 		return
@@ -55,14 +59,35 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 		return
 	}
 
-	if ok {
-		c.Status(http.StatusOK)
-	} else {
+	if !ok {
 		c.String(http.StatusBadRequest, reportVerificationError)
+		return
 	}
+
+	if err := h.dbConn.insertSignedReport(signedReport); err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
-	// TODO
-	c.String(http.StatusOK, "Here's your TCN")
+	signedReports, err := h.dbConn.getSignedReports()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	data := []byte{}
+	for _, sr := range signedReports {
+		b, err := sr.Bytes()
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		data = append(data, b...)
+	}
+
+	c.Data(http.StatusOK, "application/octet-stream", data)
 }
