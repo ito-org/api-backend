@@ -4,15 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/urfave/cli"
 )
 
-func readPostgresSettings(useEnvFile bool) (dbName, dbUser, dbPassword string) {
-	if useEnvFile {
-		godotenv.Load()
-	}
-
+func readPostgresSettings() (dbName, dbUser, dbPassword string) {
 	dbName = os.Getenv("POSTGRES_DB")
 	dbUser = os.Getenv("POSTGRES_USER")
 	dbPassword = os.Getenv("POSTGRES_PASSWORD")
@@ -32,9 +27,8 @@ func readPostgresSettings(useEnvFile bool) (dbName, dbUser, dbPassword string) {
 
 func main() {
 	var (
-		port       string
-		dbHost     string
-		useEnvFile bool
+		port   string
+		dbHost string
 	)
 
 	app := &cli.App{
@@ -51,14 +45,9 @@ func main() {
 				Usage:       "The Postgres host to be used",
 				Destination: &dbHost,
 			},
-			&cli.BoolFlag{
-				Name:        "env",
-				Usage:       "Set to true to read from environment variable file",
-				Destination: &useEnvFile,
-			},
 		},
 		Action: func(ctx *cli.Context) error {
-			dbName, dbUser, dbPassword := readPostgresSettings(useEnvFile)
+			dbName, dbUser, dbPassword := readPostgresSettings()
 			dbConnection, err := NewDBConnection(dbHost, dbUser, dbPassword, dbName)
 			if err != nil {
 				return err
