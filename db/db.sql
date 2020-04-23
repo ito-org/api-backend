@@ -17,3 +17,9 @@ CREATE TABLE IF NOT EXISTS Report (
     memo_id bigserial not null references Memo(id),
     timestamp timestamp default current_timestamp
 );
+
+CREATE TABLE IF NOT EXISTS SignedReport (
+    id bigserial primary key,
+    report_id bigserial not null references Report(id),
+    sig bytea not null
+);

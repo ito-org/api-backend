@@ -51,67 +51,97 @@ func (db *DBConnection) insertMemo(memo *tcn.Memo) (uint64, error) {
 	return newID, nil
 }
 
-func (db *DBConnection) insertReport(report *tcn.Report) error {
+func (db *DBConnection) insertReport(report *tcn.Report) (uint64, error) {
 	memoID, err := db.insertMemo(report.Memo)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	_, err = db.Exec(
+	var newID uint64
+
+	if err = db.QueryRowx(
 		`
 	INSERT INTO
 	Report(rvk, tck_bytes, j_1, j_2, memo_id)
-	VALUES($1, $2, $3, $4, $5);
+	VALUES($1, $2, $3, $4, $5)
+	RETURNING id;
 	`,
 		report.RVK,
 		report.TCKBytes[:],
 		report.J1,
 		report.J2,
 		memoID,
+	).Scan(&newID); err != nil {
+		fmt.Printf("Failed to insert report into database: %s\n", err.Error())
+		return 0, err
+	}
+	return newID, nil
+}
+
+func (db *DBConnection) insertSignedReport(signedReport *tcn.SignedReport) error {
+	reportID, err := db.insertReport(signedReport.Report)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(
+		`
+		INSERT INTO
+		SignedReport(report_id, sig)
+		VALUES($1, $2)
+		`,
+		reportID,
+		signedReport.Sig[:],
 	)
 	if err != nil {
-		fmt.Printf("Failed to insert report into database: %s\n", err.Error())
+		fmt.Printf("Failed to insert signed report into database: %s\n", err.Error())
 		return err
 	}
 	return nil
 }
 
-func (db *DBConnection) getReports() ([]*tcn.Report, error) {
-	reports := []*tcn.Report{}
+func (db *DBConnection) getSignedReports() ([]*tcn.SignedReport, error) {
+	signedReports := []*tcn.SignedReport{}
 
 	rows, err := db.Queryx(
-		`SELECT r.rvk, r.tck_bytes, r.j_1, r.j_2, m.mtype, m.mlen, m.mdata
-		FROM Report r
+		`
+		SELECT r.rvk, r.tck_bytes, r.j_1, r.j_2, m.mtype, m.mlen, m.mdata, sr.sig
+		FROM SignedReport sr
+		JOIN Report r ON sr.report_id = r.id
 		JOIN Memo m ON r.memo_id = m.id;
 		`,
 	)
 	if err != nil {
-		fmt.Printf("Failed to get reports from database: %s\n", err.Error())
+		fmt.Printf("Failed to get signed reports from database: %s\n", err.Error())
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		report := &tcn.Report{
-			TCKBytes: [32]uint8{},
-			Memo:     &tcn.Memo{},
+		signedReport := &tcn.SignedReport{
+			Report: &tcn.Report{
+				TCKBytes: [32]uint8{},
+				Memo:     &tcn.Memo{},
+			},
+			Sig: []byte{},
 		}
 		tckBytesDest := []byte{}
 		if err := rows.Scan(
-			&report.RVK,
+			&signedReport.Report.RVK,
 			&tckBytesDest,
-			&report.J1,
-			&report.J2,
-			&report.Memo.Type,
-			&report.Memo.Len,
-			&report.Memo.Data,
+			&signedReport.Report.J1,
+			&signedReport.Report.J2,
+			&signedReport.Report.Memo.Type,
+			&signedReport.Report.Memo.Len,
+			&signedReport.Report.Memo.Data,
+			&signedReport.Sig,
 		); err != nil {
-			fmt.Printf("Failed to scan report: %s\n", err.Error())
+			fmt.Printf("Failed to scan signed report: %s\n", err.Error())
 			return nil, err
 		}
 
-		copy(report.TCKBytes[:], tckBytesDest[:32])
-		reports = append(reports, report)
+		copy(signedReport.Report.TCKBytes[:], tckBytesDest[:32])
+		signedReports = append(signedReports, signedReport)
 	}
 
-	return reports, nil
+	return signedReports, nil
 }
