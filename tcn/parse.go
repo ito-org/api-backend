@@ -35,7 +35,7 @@ func getSignedReport(data []byte) (*SignedReport, uint16) {
 func GetSignedReports(data []byte) []*SignedReport {
 	signedReports := []*SignedReport{}
 	var startPos uint16
-	for true {
+	for {
 		signedReport, endPos := getSignedReport(data[startPos:])
 		startPos += endPos
 		signedReports = append(signedReports, signedReport)
@@ -89,7 +89,7 @@ func getReport(data []byte) (report *Report, endPos uint16) {
 func GetReports(data []byte) []*Report {
 	reports := []*Report{}
 	var startPos uint16
-	for true {
+	for {
 		report, endPos := getReport(data[startPos:])
 		startPos += endPos
 		reports = append(reports, report)
