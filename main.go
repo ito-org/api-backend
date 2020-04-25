@@ -7,10 +7,15 @@ import (
 	"github.com/urfave/cli"
 )
 
-func readPostgresSettings() (dbName, dbUser, dbPassword string) {
+func readPostgresSettings() (dbHost, dbName, dbUser, dbPassword string) {
+	dbHost = os.Getenv("POSTGRES_HOST")
 	dbName = os.Getenv("POSTGRES_DB")
 	dbUser = os.Getenv("POSTGRES_USER")
 	dbPassword = os.Getenv("POSTGRES_PASSWORD")
+
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
 
 	if dbName == "" {
 		dbName = "postgres"
@@ -27,8 +32,7 @@ func readPostgresSettings() (dbName, dbUser, dbPassword string) {
 
 func main() {
 	var (
-		port   string
-		dbHost string
+		port string
 	)
 
 	app := &cli.App{
@@ -39,15 +43,9 @@ func main() {
 				Usage:       "Port for the server to run on",
 				Destination: &port,
 			},
-			&cli.StringFlag{
-				Name:        "dbhost",
-				Value:       "127.0.0.1",
-				Usage:       "The Postgres host to be used",
-				Destination: &dbHost,
-			},
 		},
 		Action: func(ctx *cli.Context) error {
-			dbName, dbUser, dbPassword := readPostgresSettings()
+			dbHost, dbName, dbUser, dbPassword := readPostgresSettings()
 			dbConnection, err := NewDBConnection(dbHost, dbUser, dbPassword, dbName)
 			if err != nil {
 				return err
