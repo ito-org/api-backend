@@ -70,5 +70,6 @@ func TestGetSignedReport(t *testing.T) {
 
 	retSignedReport, err := tcn.GetSignedReport(srb)
 
+	assert.NoError(t, err)
 	assert.EqualValues(t, signedReport, retSignedReport)
 }
