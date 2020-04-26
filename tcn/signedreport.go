@@ -7,7 +7,7 @@ import (
 
 const (
 	// SignedReportMinLength defines a signed report's minimum length in bytes
-	SignedReportMinLength = 70
+	SignedReportMinLength = ReportMinLength + ed25519.SignatureSize
 )
 
 // SignedReport contains a report and the corresponding signature. The client
