@@ -9,7 +9,7 @@ import (
 // GetSignedReport interprets data as a signed report and returns it as a
 // parsed structure.
 func GetSignedReport(data []byte) (*SignedReport, error) {
-	if len(data) < SignedReportMinLength+ed25519.SignatureSize {
+	if len(data) < SignedReportMinLength {
 		return nil, errors.New("Data too short to be a valid signed report")
 	}
 
