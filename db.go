@@ -100,22 +100,8 @@ func (db *DBConnection) insertSignedReport(signedReport *tcn.SignedReport) error
 	return nil
 }
 
-func (db *DBConnection) getSignedReports() ([]*tcn.SignedReport, error) {
+func (db *DBConnection) scanSignedReports(rows *sqlx.Rows) ([]*tcn.SignedReport, error) {
 	signedReports := []*tcn.SignedReport{}
-
-	rows, err := db.Queryx(
-		`
-		SELECT r.rvk, r.tck_bytes, r.j_1, r.j_2, m.mtype, m.mlen, m.mdata, sr.sig
-		FROM SignedReport sr
-		JOIN Report r ON sr.report_id = r.id
-		JOIN Memo m ON r.memo_id = m.id;
-		`,
-	)
-	if err != nil {
-		fmt.Printf("Failed to get signed reports from database: %s\n", err.Error())
-		return nil, err
-	}
-	defer rows.Close()
 	for rows.Next() {
 		signedReport := &tcn.SignedReport{
 			Report: &tcn.Report{
@@ -142,6 +128,59 @@ func (db *DBConnection) getSignedReports() ([]*tcn.SignedReport, error) {
 		copy(signedReport.Report.TCKBytes[:], tckBytesDest[:32])
 		signedReports = append(signedReports, signedReport)
 	}
+	return signedReports, nil
+}
 
+func (db *DBConnection) getSignedReports() ([]*tcn.SignedReport, error) {
+	rows, err := db.Queryx(
+		`
+		SELECT r.rvk, r.tck_bytes, r.j_1, r.j_2, m.mtype, m.mlen, m.mdata, sr.sig
+		FROM SignedReport sr
+		JOIN Report r ON sr.report_id = r.id
+		JOIN Memo m ON r.memo_id = m.id;
+		`,
+	)
+	if err != nil {
+		fmt.Printf("Failed to get signed reports from database: %s\n", err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+	signedReports, err := db.scanSignedReports(rows)
+	if err != nil {
+		return nil, err
+	}
+	return signedReports, nil
+}
+
+// getNewSignedReports returns all signed reports that were made after lastReport.
+func (db *DBConnection) getNewSignedReports(lastReport *tcn.Report) ([]*tcn.SignedReport, error) {
+	rows, err := db.Queryx(
+		`
+		SELECT r.rvk, r.tck_bytes, r.j_1, r.j_2, m.mtype, m.mlen, m.mdata, sr.sig
+		FROM SignedReport sr
+		JOIN Report r ON sr.report_id = r.id
+		WHERE r.timestamp > (
+			SELECT r2.timestamp
+			FROM Report r2
+			WHERE r2.rvk = $1
+			AND r2.tck_bytes = $2
+			AND r2.j_1 = $3
+			AND r2.j_1 = $4
+		);
+		`,
+		lastReport.RVK,
+		lastReport.TCKBytes,
+		lastReport.J1,
+		lastReport.J2,
+	)
+	if err != nil {
+		fmt.Printf("Failed to get signed reports from database: %s\n", err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+	signedReports, err := db.scanSignedReports(rows)
+	if err != nil {
+		return nil, err
+	}
 	return signedReports, nil
 }
