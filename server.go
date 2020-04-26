@@ -79,11 +79,11 @@ func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
 	// The 'from' query param is used to only get reports that were made after
 	// the one in 'from'.
 	from := c.Query("from")
-	report := tcn.GetReport([]byte(from))
 
 	if from == "" {
 		signedReports, err = h.dbConn.getSignedReports()
 	} else {
+		report := tcn.GetReport([]byte(from))
 		signedReports, err = h.dbConn.getNewSignedReports(report)
 	}
 	if err != nil {
