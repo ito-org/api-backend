@@ -50,9 +50,12 @@ func GetSignedReports(data []byte) []*SignedReport {
 }
 
 // GetReport inteprets data as a report and returns it as a parsed structure.
-func GetReport(data []byte) *Report {
+func GetReport(data []byte) (*Report, error) {
+	if len(data) < ReportMinLength {
+		return nil, errors.New("Data too short to be a valid signed report")
+	}
 	report, _ := getReport(data)
-	return report
+	return report, nil
 }
 
 // getReport is the internal function for getting reports from byte arrays.
