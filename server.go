@@ -73,7 +73,7 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 }
 
 func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
-	signedReports := []*tcn.SignedReport{}
+	var signedReports []*tcn.SignedReport
 	var err error
 
 	// The 'from' query param is used to only get reports that were made after
