@@ -3,7 +3,7 @@
 API for supplying and verifying TCNs of users confirmed infected
 
 ![Tests](https://github.com/ito-org/api-backend/workflows/Continuous%20Integration/badge.svg)
-[![Docs](https://img.shields.io/website?label=docs&url=https%3A%2F%2Fdocs.ito-app.org%2Fapi-backend)](https://docs.ito-app.org/api-backend)
+[![Docs](https://img.shields.io/website?label=documentation&url=https%3A%2F%2Fdocs.ito-app.org%2Fapi-backend)](https://docs.ito-app.org/api-backend)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause--Clear-blue)](LICENSE)
 
 ## Prerequisites
