@@ -83,7 +83,11 @@ func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
 	if from == "" {
 		signedReports, err = h.dbConn.getSignedReports()
 	} else {
-		report := tcn.GetReport([]byte(from))
+		report, err := tcn.GetReport([]byte(from))
+		if err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
 		signedReports, err = h.dbConn.getNewSignedReports(report)
 	}
 	if err != nil {

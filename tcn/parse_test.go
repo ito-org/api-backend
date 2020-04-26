@@ -45,8 +45,8 @@ func TestGetReport(t *testing.T) {
 		return
 	}
 
-	retReport := tcn.GetReport(rb)
-
+	retReport, err := tcn.GetReport(rb)
+	assert.NoError(t, err)
 	assert.EqualValues(t, report, retReport)
 }
 
