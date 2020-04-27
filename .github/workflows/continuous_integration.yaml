@@ -34,6 +34,9 @@ jobs:
       - name: Run Tests
         run: POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres go test -v ./...
 
+      - name: Run docker build
+        run: docker build .
+
   security-scanning:
     name: Security Scanning
     runs-on: ubuntu-latest
