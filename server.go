@@ -97,6 +97,10 @@ func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
 			return
 		}
 		signedReports, err = h.dbConn.getNewSignedReports(report)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
