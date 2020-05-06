@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"io/ioutil"
 	"net/http"
 
@@ -83,8 +84,14 @@ func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
 	if from == "" {
 		signedReports, err = h.dbConn.getSignedReports()
 	} else {
+		fromBytes, err := hex.DecodeString(from)
+		if err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
 		var report *tcn.Report
-		report, err = tcn.GetReport([]byte(from))
+		report, err = tcn.GetReport(fromBytes)
 		if err != nil {
 			c.String(http.StatusBadRequest, err.Error())
 			return
