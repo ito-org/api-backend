@@ -169,7 +169,7 @@ func (db *DBConnection) getNewSignedReports(lastReport *tcn.Report) ([]*tcn.Sign
 		);
 		`,
 		lastReport.RVK,
-		lastReport.TCKBytes,
+		lastReport.TCKBytes[:],
 		lastReport.J1,
 		lastReport.J2,
 	)
