@@ -159,6 +159,7 @@ func (db *DBConnection) getNewSignedReports(lastReport *tcn.Report) ([]*tcn.Sign
 		SELECT r.rvk, r.tck_bytes, r.j_1, r.j_2, m.mtype, m.mlen, m.mdata, sr.sig
 		FROM SignedReport sr
 		JOIN Report r ON sr.report_id = r.id
+		JOIN Memo m ON r.memo_id = m.id
 		WHERE r.timestamp > (
 			SELECT r2.timestamp
 			FROM Report r2
