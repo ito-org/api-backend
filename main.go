@@ -16,7 +16,6 @@ func readPostgresSettings() (dbHost, dbName, dbUser, dbPassword string) {
 	if dbHost == "" {
 		dbHost = "localhost"
 	}
-
 	if dbName == "" {
 		dbName = "postgres"
 	}
@@ -31,9 +30,7 @@ func readPostgresSettings() (dbHost, dbName, dbUser, dbPassword string) {
 }
 
 func main() {
-	var (
-		port string
-	)
+	var port string
 
 	app := &cli.App{
 		Flags: []cli.Flag{

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"io/ioutil"
 	"net/http"
 
@@ -73,7 +74,34 @@ func (h *TCNReportHandler) postTCNReport(c *gin.Context) {
 }
 
 func (h *TCNReportHandler) getTCNReport(c *gin.Context) {
-	signedReports, err := h.dbConn.getSignedReports()
+	var signedReports []*tcn.SignedReport
+	var err error
+
+	// The 'from' query param is used to only get reports that were made after
+	// the one in 'from'.
+	from := c.Query("from")
+
+	if from == "" {
+		signedReports, err = h.dbConn.getSignedReports()
+	} else {
+		fromBytes, err := hex.DecodeString(from)
+		if err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		var report *tcn.Report
+		report, err = tcn.GetReport(fromBytes)
+		if err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
+		signedReports, err = h.dbConn.getNewSignedReports(report)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return

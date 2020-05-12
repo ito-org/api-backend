@@ -19,6 +19,7 @@ func TestGetReports(t *testing.T) {
 		b, err := r.Bytes()
 		if err != nil {
 			t.Error(err.Error())
+			return
 		}
 		reportBytes = append(reportBytes, b...)
 	}
@@ -35,14 +36,40 @@ func TestGetReport(t *testing.T) {
 	_, _, report, err := tcn.GenerateReport(0, 1, []byte("symptom data"))
 	if err != nil {
 		t.Error(err.Error())
+		return
 	}
 
 	rb, err := report.Bytes()
 	if err != nil {
 		t.Error(err.Error())
+		return
 	}
 
-	retReport := tcn.GetReport(rb)
-
+	retReport, err := tcn.GetReport(rb)
+	assert.NoError(t, err)
 	assert.EqualValues(t, report, retReport)
+}
+
+func TestGetSignedReport(t *testing.T) {
+	_, rak, report, err := tcn.GenerateReport(0, 4, []byte("sympton data"))
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	signedReport, err := tcn.GenerateSignedReport(rak, report)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	srb, err := signedReport.Bytes()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	retSignedReport, err := tcn.GetSignedReport(srb)
+
+	assert.NoError(t, err)
+	assert.EqualValues(t, signedReport, retSignedReport)
 }

@@ -12,6 +12,9 @@ const (
 	// ITOMemoCode is the code that marks a report as an ito report in the
 	// memo.
 	ITOMemoCode = 0x2
+	// ReportMinLength is the minimum length of a TCN report (with memo data
+	// of length 0) in bytes.
+	ReportMinLength = 70
 )
 
 // Report represents a report as described in the TCN protocol:
