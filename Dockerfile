@@ -1,17 +1,31 @@
-FROM golang:alpine
+FROM golang:1-alpine as builder
 
-COPY . /api-backend
-WORKDIR /api-backend
+RUN apk update && apk add --no-cache git ca-certificates tzdata && update-ca-certificates
 
-RUN GOARCH=amd64 GOOS=linux go build -o backend github.com/ito-org/go-backend
+ENV USER=ito
+ENV UID=10001
 
-FROM golang:alpine
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+WORKDIR $GOPATH/src/ito/api-backend/
+COPY . .
 
-RUN apk add --no-cache --upgrade bash postgresql-client
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /go/bin/backend
 
-COPY --from=0 /api-backend/backend /backend
-COPY ./scripts/wait-for-postgres.sh /wait-for-postgres.sh
+FROM scratch
 
-WORKDIR /
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+COPY --from=builder /go/bin/backend /go/bin/backend
 
-CMD ["sh", "./wait-for-postgres.sh", "postgres", "--", "./backend", "--dbhost=postgres"]
+USER ${USER}:${USER}
+
+ENTRYPOINT ["/go/bin/backend"]
