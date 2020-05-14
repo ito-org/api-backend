@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"crypto"
+	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -39,8 +41,17 @@ func TestMain(m *testing.M) {
 }
 
 func getGetRequest() (*httptest.ResponseRecorder, *http.Request) {
+	return getGetRequestWithParam("")
+}
+
+func getGetRequestWithParam(from string) (*httptest.ResponseRecorder, *http.Request) {
+	path := "/tcnreport"
+	if from != "" {
+		path += fmt.Sprintf("?from=%s", from)
+	}
+
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/tcnreport", nil)
+	req, _ := http.NewRequest("GET", path, nil)
 	return rec, req
 }
 
@@ -256,4 +267,79 @@ func TestGetTCNReports(t *testing.T) {
 	}
 
 	assert.Equal(t, len(signedReports), found)
+}
+
+func postSignedReports(signedReportBytes []byte) {
+	rec, req := getPostRequest(signedReportBytes)
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	handler.postTCNReport(ctx)
+}
+
+func TestGetNewTCNReports(t *testing.T) {
+	signedReports := [5]*tcn.SignedReport{}
+	for i := 0; i < 5; i++ {
+		_, rak, report, _ := tcn.GenerateReport(0, 1, []byte("symptom data"))
+		signedReport, err := tcn.GenerateSignedReport(rak, report)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+
+		signedReportBytes, err := signedReport.Bytes()
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+
+		postSignedReports(signedReportBytes)
+		if i == 2 {
+			// Post it twice
+			postSignedReports(signedReportBytes)
+		}
+		signedReports[i] = signedReport
+	}
+
+	// Prepare the hex values for reports 2 and 3
+	// 2 is the one that was inserted twice and 3 was insert once.
+	sr2Bytes, _ := signedReports[2].Bytes()
+	hex2Dst := make([]byte, hex.EncodedLen(len(sr2Bytes)))
+	hex.Encode(hex2Dst, sr2Bytes)
+
+	// GET reports after second report (second report was inserted twice so
+	// the returned reports should contain the copy of that report that was
+	// inserted later, but also the rest of the reports)
+	rec, req := getGetRequestWithParam(string(hex2Dst))
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	handler.getTCNReport(ctx)
+	defer rec.Result().Body.Close()
+
+	body, err := ioutil.ReadAll(rec.Result().Body)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	if len(body) == 0 {
+		t.Error("Body is empty")
+		return
+	}
+
+	// Retrieve the signed reports from the handler function's response
+	retSignedReports := tcn.GetSignedReports(body)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	found := 0
+	for _, r := range signedReports {
+		for _, rr := range retSignedReports {
+			if reflect.DeepEqual(r, rr) {
+				found++
+			}
+		}
+	}
+
+	assert.Equal(t, len(signedReports[2:]), found)
 }

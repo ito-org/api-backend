@@ -161,12 +161,12 @@ func (db *DBConnection) getNewSignedReports(lastReport *tcn.Report) ([]*tcn.Sign
 		JOIN Report r ON sr.report_id = r.id
 		JOIN Memo m ON r.memo_id = m.id
 		WHERE r.timestamp > (
-			SELECT r2.timestamp
+			SELECT MIN(r2.timestamp)
 			FROM Report r2
 			WHERE r2.rvk = $1
 			AND r2.tck_bytes = $2
 			AND r2.j_1 = $3
-			AND r2.j_1 = $4
+			AND r2.j_2 = $4
 		);
 		`,
 		lastReport.RVK,
