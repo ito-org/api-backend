@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ito-org/go-backend/tcn"
+	"github.com/openmined/tcn-psi/tcn"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -32,7 +32,7 @@ type DBConnection struct {
 	*sqlx.DB
 }
 
-func (db *DBConnection) insertMemo(memo *tcn.Memo) (uint64, error) {
+func (db *DBConnection) insertMemo(memoType uint8, memoData []uint8) (uint64, error) {
 	var newID uint64
 	if err := db.QueryRowx(
 		`
@@ -41,9 +41,9 @@ func (db *DBConnection) insertMemo(memo *tcn.Memo) (uint64, error) {
 		VALUES($1, $2, $3)
 		RETURNING id;
 		`,
-		memo.Type,
-		memo.Len,
-		memo.Data[:],
+		memoType,
+		len(memoData),
+		memoData[:],
 	).Scan(&newID); err != nil {
 		fmt.Printf("Failed to insert memo into database: %s\n", err.Error())
 		return 0, err
@@ -52,7 +52,7 @@ func (db *DBConnection) insertMemo(memo *tcn.Memo) (uint64, error) {
 }
 
 func (db *DBConnection) insertReport(report *tcn.Report) (uint64, error) {
-	memoID, err := db.insertMemo(report.Memo)
+	memoID, err := db.insertMemo(report.MemoType, report.MemoData)
 	if err != nil {
 		return 0, err
 	}
@@ -106,21 +106,23 @@ func (db *DBConnection) scanSignedReports(rows *sqlx.Rows) ([]*tcn.SignedReport,
 		signedReport := &tcn.SignedReport{
 			Report: &tcn.Report{
 				TCKBytes: [32]uint8{},
-				Memo:     &tcn.Memo{},
 			},
 			Sig: []byte{},
 		}
 		tckBytesDest := []byte{}
-		if err := rows.Scan(
+		memoLength := 0
+
+		err := rows.Scan(
 			&signedReport.Report.RVK,
 			&tckBytesDest,
 			&signedReport.Report.J1,
 			&signedReport.Report.J2,
-			&signedReport.Report.Memo.Type,
-			&signedReport.Report.Memo.Len,
-			&signedReport.Report.Memo.Data,
+			&signedReport.Report.MemoType,
+			&memoLength,
+			&signedReport.Report.MemoData,
 			&signedReport.Sig,
-		); err != nil {
+		);
+		if err != nil {
 			fmt.Printf("Failed to scan signed report: %s\n", err.Error())
 			return nil, err
 		}

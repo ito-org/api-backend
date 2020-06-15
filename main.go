@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
+
+	"github.com/openmined/tcn-psi/server"
 )
 
 func readPostgresSettings() (dbHost, dbName, dbUser, dbPassword string) {
@@ -47,7 +49,13 @@ func main() {
 			if err != nil {
 				return err
 			}
-			return GetRouter(port, dbConnection).Run(fmt.Sprintf(":%s", port))
+
+			psicServer, err := server.CreateWithNewKey()
+			if err != nil {
+				return err
+			}
+
+			return GetRouter(port, dbConnection, psicServer).Run(fmt.Sprintf(":%s", port))
 		},
 	}
 
